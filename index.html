@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axon — AI-automatisering voor het MKB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:      #0a0c0b;
+  --ink2:     #0f1210;
+  --surface:  #151915;
+  --surface2: #1c211b;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.12);
+  --gold:     #c9a84c;
+  --gold-lt:  #dfc07a;
+  --teal:     #3a7a6a;
+  --teal-lt:  #56a690;
+  --text:     #eceee8;
+  --muted:    #7d8a7a;
+  --card:     #13170f;
+  --radius:   12px;
+  --nav-h:    68px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: 'Sora', sans-serif; }
+
+/* grain */
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.018;
+}
+
+/* ─── NAV ─────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px;
+  background: rgba(10,12,11,0.88);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800; font-size: 22px;
+  color: var(--gold-lt); text-decoration: none; letter-spacing: -0.5px;
+}
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a {
+  color: var(--muted); text-decoration: none; font-size: 14px;
+  font-weight: 500; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-cta {
+  background: var(--gold) !important; color: #0a0c0b !important;
+  padding: 9px 20px; border-radius: 7px;
+  font-weight: 700 !important; font-size: 13px !important;
+  transition: opacity 0.2s !important;
+}
+.nav-cta:hover { opacity: 0.85; color: #0a0c0b !important; }
+
+/* hamburger */
+.nav-hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.nav-hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: all 0.3s;
+}
+.nav-mobile {
+  display: none; flex-direction: column;
+  position: fixed; top: var(--nav-h); left: 0; right: 0;
+  background: var(--ink2);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 24px; gap: 4px; z-index: 199;
+}
+.nav-mobile.open { display: flex; }
+.nav-mobile a {
+  color: var(--text); text-decoration: none; font-size: 16px;
+  font-weight: 500; padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.nav-mobile a:last-child { border-bottom: none; }
+.nav-mobile .nav-cta-mobile {
+  margin-top: 8px; background: var(--gold); color: #0a0c0b !important;
+  text-align: center; padding: 14px; border-radius: 8px;
+  font-weight: 700; font-size: 15px;
+}
+
+/* ─── ANIMATIONS ──────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(1.5); }
+}
+.reveal {
+  opacity: 0; transform: translateY(18px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible { opacity: 1; transform: none; }
+
+/* ─── HERO ────────────────────────────────────────────────────── */
+.hero {
+  min-height: 100svh;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(var(--nav-h) + 60px) 24px 80px;
+  position: relative; overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 65% 50% at 50% -10%, rgba(58,122,106,0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 30% 30% at 80% 60%, rgba(201,168,76,0.06) 0%, transparent 60%);
+}
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(ellipse 80% 65% at 50% 40%, black 20%, transparent 80%);
+}
+.hero-inner {
+  position: relative; z-index: 2;
+  max-width: 860px; width: 100%; text-align: center;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(58,122,106,0.1); border: 1px solid rgba(58,122,106,0.22);
+  color: var(--teal-lt); padding: 5px 14px; border-radius: 100px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 32px;
+  animation: fadeUp 0.7s ease both;
+}
+.hero-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--teal-lt); animation: pulse 2s infinite;
+}
+h1.hero-title {
+  font-size: clamp(38px, 6.5vw, 80px);
+  font-weight: 800; line-height: 1.06; letter-spacing: -2px;
+  margin-bottom: 24px;
+  animation: fadeUp 0.7s 0.1s ease both;
+}
+h1.hero-title em { font-style: normal; color: var(--gold-lt); }
+.hero-sub {
+  font-size: clamp(15px, 2vw, 18px);
+  color: var(--muted); max-width: 520px; margin: 0 auto 44px;
+  line-height: 1.8; font-weight: 400;
+  animation: fadeUp 0.7s 0.2s ease both;
+}
+.hero-actions {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  animation: fadeUp 0.7s 0.3s ease both;
+}
+.btn-primary {
+  background: var(--gold); color: #0a0c0b;
+  padding: 14px 30px; border-radius: 8px;
+  font-weight: 700; font-size: 15px; text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 40px rgba(201,168,76,0.2);
+  display: inline-block;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 40px rgba(201,168,76,0.38);
+}
+.btn-ghost {
+  border: 1px solid rgba(255,255,255,0.12); color: var(--text);
+  padding: 14px 30px; border-radius: 8px;
+  font-weight: 500; font-size: 15px; text-decoration: none;
+  background: rgba(255,255,255,0.03);
+  transition: border-color 0.2s, background 0.2s;
+  display: inline-block;
+}
+.btn-ghost:hover {
+  border-color: rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.07);
+}
+.hero-trust {
+  display: flex; gap: 40px; justify-content: center;
+  margin-top: 64px; padding-top: 40px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  animation: fadeUp 0.7s 0.4s ease both;
+}
+.trust-item { text-align: center; }
+.trust-num {
+  font-family: 'Sora', sans-serif;
+  font-size: 30px; font-weight: 800; letter-spacing: -1px;
+  color: var(--text); margin-bottom: 2px;
+}
+.trust-label { font-size: 12px; color: var(--muted); }
+
+/* ─── SECTIONS ────────────────────────────────────────────────── */
+section { padding: 100px 24px; }
+.container { max-width: 1100px; margin: 0 auto; }
+.section-tag {
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--teal-lt);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+}
+.section-tag::after {
+  content: ''; width: 32px; height: 1px;
+  background: var(--teal-lt); opacity: 0.5;
+}
+h2.section-title {
+  font-size: clamp(26px, 4vw, 46px);
+  font-weight: 800; letter-spacing: -1.2px;
+  line-height: 1.1; margin-bottom: 14px;
+}
+.section-sub {
+  color: var(--muted); font-size: 16px;
+  max-width: 520px; line-height: 1.8;
+}
+
+/* ─── PROBLEMS ────────────────────────────────────────────────── */
+.problems { background: var(--ink2); }
+.problems-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: 16px;
+  overflow: hidden; margin-top: 56px;
+}
+.problem-card {
+  background: var(--surface); padding: 36px 28px;
+  transition: background 0.25s;
+}
+.problem-card:hover { background: var(--surface2); }
+.problem-icon {
+  width: 44px; height: 44px;
+  background: rgba(58,122,106,0.1);
+  border: 1px solid rgba(58,122,106,0.2);
+  border-radius: 10px; display: flex; align-items: center;
+  justify-content: center; margin-bottom: 18px;
+}
+.problem-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 9px; }
+.problem-card p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+/* ─── PRODUCTEN ───────────────────────────────────────────────── */
+.products-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 18px; margin-top: 56px;
+}
+.product-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 36px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.product-card:hover { border-color: rgba(58,122,106,0.28); transform: translateY(-2px); }
+.product-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.25), transparent);
+}
+.product-card.full { grid-column: 1/-1; }
+.product-tag {
+  display: inline-block;
+  background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2);
+  color: var(--gold-lt); padding: 4px 11px; border-radius: 100px;
+  font-size: 11px; font-weight: 700; margin-bottom: 14px;
+}
+.product-tag.teal {
+  background: rgba(86,166,144,0.1); border-color: rgba(86,166,144,0.22);
+  color: var(--teal-lt);
+}
+.product-card h3 { font-size: 19px; font-weight: 700; margin-bottom: 9px; }
+.product-card > p { color: var(--muted); font-size: 14px; line-height: 1.75; margin-bottom: 20px; }
+.feat-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.feat-list li {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 13.5px; color: var(--muted);
+}
+.feat-list li::before {
+  content: ''; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--teal-lt); flex-shrink: 0;
+}
+
+/* ─── DEMO ────────────────────────────────────────────────────── */
+.demos-bg { background: var(--ink2); }
+.demo-tabs {
+  display: flex; gap: 8px; margin: 28px 0 36px;
+  flex-wrap: wrap;
+}
+.demo-tab {
+  padding: 9px 20px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--muted); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.demo-tab:hover { border-color: rgba(58,122,106,0.3); color: var(--text); }
+.demo-tab.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+.demo-panel { display: none; }
+.demo-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: start; }
+
+.demo-info h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+.demo-info > p { color: var(--muted); font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
+.demo-cases {
+  list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px;
+}
+.demo-cases li {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 14px; color: var(--muted);
+}
+.demo-cases li::before {
+  content: ''; width: 10px; height: 1px;
+  background: var(--gold); flex-shrink: 0;
+}
+
+/* chat */
+.chat-widget {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden; height: 500px;
+  display: flex; flex-direction: column;
+}
+.chat-head {
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface);
+}
+.chat-avatar {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(58,122,106,0.12);
+  border: 1px solid rgba(58,122,106,0.22);
+  flex-shrink: 0;
+}
+.chat-head-info h4 { font-size: 13px; font-weight: 600; }
+.chat-head-info p { font-size: 11px; color: var(--muted); }
+.online-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.55);
+  margin-left: auto; flex-shrink: 0;
+}
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  scrollbar-width: thin; scrollbar-color: var(--surface2) transparent;
+}
+.msg { max-width: 83%; animation: fadeUp 0.25s ease; }
+.msg-bot { align-self: flex-start; }
+.msg-user { align-self: flex-end; }
+.msg-bubble {
+  padding: 9px 13px; border-radius: 12px;
+  font-size: 13.5px; line-height: 1.6;
+}
+.msg-bot .msg-bubble { background: var(--surface2); border-bottom-left-radius: 3px; }
+.msg-user .msg-bubble { background: var(--gold); color: #0a0c0b; font-weight: 600; border-bottom-right-radius: 3px; }
+.msg-time { font-size: 10px; color: var(--muted); margin-top: 3px; padding: 0 3px; }
+.typing {
+  display: flex; gap: 4px; padding: 11px 13px;
+  background: var(--surface2); border-radius: 12px;
+  border-bottom-left-radius: 3px; align-self: flex-start;
+  animation: fadeUp 0.25s ease;
+}
+.typing span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--muted);
+  animation: typingBounce 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+  0%,60%,100% { opacity: 0.3; transform: translateY(0); }
+  30%          { opacity: 1;   transform: translateY(-5px); }
+}
+.chat-input-area {
+  padding: 12px 14px; border-top: 1px solid var(--border);
+  display: flex; gap: 9px; align-items: center;
+  background: var(--surface);
+}
+.chat-input {
+  flex: 1; background: var(--ink2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 13px; color: var(--text);
+  font-size: 14px; font-family: inherit; outline: none;
+  transition: border-color 0.2s;
+}
+.chat-input:focus { border-color: rgba(58,122,106,0.4); }
+.chat-input::placeholder { color: var(--muted); }
+.chat-send {
+  background: var(--teal); border: none; width: 36px; height: 36px;
+  border-radius: 8px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: opacity 0.2s; flex-shrink: 0;
+}
+.chat-send:hover { opacity: 0.85; }
+.chat-send svg { width: 15px; height: 15px; fill: #fff; }
+.chat-foot {
+  font-size: 10px; color: var(--muted); text-align: center;
+  padding: 7px; border-top: 1px solid var(--border);
+}
+
+/* ─── WHY ─────────────────────────────────────────────────────── */
+.why { background: var(--ink2); }
+.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; margin-top: 56px; }
+.compare-table {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.compare-row {
+  display: grid; grid-template-columns: 1.3fr 1fr 1fr;
+  border-bottom: 1px solid var(--border);
+}
+.compare-row:last-child { border-bottom: none; }
+.compare-cell { padding: 12px 16px; font-size: 13px; color: var(--muted); }
+.compare-row.head .compare-cell {
+  background: var(--surface); font-size: 11px;
+  font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+}
+.compare-row.head .compare-cell.us { color: var(--gold-lt); }
+.compare-cell.us { color: var(--gold-lt); font-weight: 600; }
+
+.why-points { display: flex; flex-direction: column; gap: 24px; }
+.why-point { display: flex; gap: 14px; }
+.why-point-icon {
+  width: 38px; height: 38px; border-radius: 9px;
+  background: rgba(58,122,106,0.1); border: 1px solid rgba(58,122,106,0.2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+}
+.why-point h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.why-point p { font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+
+/* ─── PRICING ─────────────────────────────────────────────────── */
+.pricing { background: var(--ink); }
+
+/* Launch banner */
+.launch-banner {
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 10px; padding: 14px 20px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 40px; flex-wrap: wrap;
+}
+.launch-banner-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold); animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+.launch-banner p {
+  font-size: 13.5px; color: var(--gold-lt); font-weight: 500;
+}
+.launch-banner strong { font-weight: 700; }
+
+.pricing-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 18px; margin-top: 0;
+}
+.pricing-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px 28px;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+.pricing-card.featured {
+  border-color: rgba(201,168,76,0.3);
+  background: linear-gradient(160deg, rgba(201,168,76,0.03), var(--card));
+}
+.pricing-card.featured::before {
+  content: 'Meest gekozen';
+  position: absolute; top: -1px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--gold); color: #0a0c0b;
+  font-size: 10px; font-weight: 700; padding: 4px 14px;
+  border-radius: 0 0 8px 8px; white-space: nowrap;
+}
+.plan-name { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.plan-desc { font-size: 13px; color: var(--muted); margin-bottom: 22px; line-height: 1.65; }
+
+.price-block { margin-bottom: 8px; }
+.price-launch {
+  display: flex; align-items: baseline; gap: 6px;
+  margin-bottom: 2px;
+}
+.price-amount {
+  font-family: 'Sora', sans-serif;
+  font-size: 40px; font-weight: 800; letter-spacing: -2px; line-height: 1;
+}
+.price-per { font-size: 16px; color: var(--muted); font-weight: 400; }
+.price-setup { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.price-note {
+  font-size: 11px; color: rgba(201,168,76,0.6);
+  font-weight: 600; letter-spacing: 0.3px; margin-bottom: 22px;
+}
+
+.plan-features {
+  list-style: none; display: flex; flex-direction: column; gap: 8px;
+  flex: 1; margin-bottom: 24px;
+}
+.plan-features li {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13px; color: var(--muted); line-height: 1.5;
+}
+.plan-features li::before {
+  content: ''; width: 10px; height: 1px;
+  background: var(--teal-lt); flex-shrink: 0; margin-top: 8px;
+}
+.plan-cta {
+  display: block; text-align: center;
+  padding: 12px 20px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; text-decoration: none;
+  transition: all 0.2s;
+}
+.plan-cta.primary {
+  background: var(--gold); color: #0a0c0b;
+  box-shadow: 0 0 28px rgba(201,168,76,0.16);
+}
+.plan-cta.primary:hover {
+  box-shadow: 0 0 44px rgba(201,168,76,0.32);
+  transform: translateY(-1px);
+}
+.plan-cta.ghost {
+  border: 1px solid var(--border); color: var(--text);
+  background: rgba(255,255,255,0.02);
+}
+.plan-cta.ghost:hover {
+  border-color: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.05);
+}
+.pricing-sub {
+  text-align: center; color: var(--muted);
+  font-size: 12.5px; margin-top: 22px; line-height: 1.7;
+}
+
+/* ─── PROCESS ─────────────────────────────────────────────────── */
+.process { background: var(--ink2); }
+.process-steps {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 20px; margin-top: 56px;
+}
+.step-card { position: relative; padding-left: 0; }
+.step-num {
+  width: 50px; height: 50px; border-radius: 50%;
+  background: var(--card); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Sora', sans-serif;
+  font-size: 15px; font-weight: 800; color: var(--gold-lt);
+  margin-bottom: 18px;
+}
+.step-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 7px; }
+.step-card p { font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+
+/* ─── STATS ───────────────────────────────────────────────────── */
+.stats { background: var(--ink); }
+.stats-hero {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden; margin-bottom: 20px;
+}
+.stats-cell {
+  background: var(--card); padding: 40px 32px; text-align: center;
+}
+.stats-cell:nth-child(2) { background: var(--surface); }
+.stats-cell-num {
+  font-family: 'Sora', sans-serif;
+  font-size: 48px; font-weight: 800; letter-spacing: -2px;
+  color: var(--gold-lt); line-height: 1; margin-bottom: 8px;
+}
+.stats-cell-label {
+  font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px;
+}
+.stats-cell-sub {
+  font-size: 12px; color: var(--muted); line-height: 1.6;
+}
+.stats-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 18px; margin-bottom: 18px;
+}
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent);
+}
+.stat-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.stat-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  background: rgba(58,122,106,0.1); border: 1px solid rgba(58,122,106,0.2);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.stat-card h3 { font-size: 15px; font-weight: 700; }
+.stat-big {
+  font-family: 'Sora', sans-serif;
+  font-size: 40px; font-weight: 800; letter-spacing: -1.5px;
+  color: var(--text); line-height: 1; margin-bottom: 10px;
+}
+.stat-big span { font-size: 13px; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+.stat-card p { font-size: 13.5px; color: var(--muted); line-height: 1.7; margin-bottom: 12px; }
+.stat-callout {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 13px; background: rgba(58,122,106,0.07);
+  border-radius: 8px; border: 1px solid rgba(58,122,106,0.14);
+  font-size: 12.5px; color: var(--teal-lt); font-weight: 500;
+}
+.stat-source {
+  font-size: 11px; color: var(--muted); margin-top: 10px; opacity: 0.6;
+}
+
+/* ─── CONTACT ─────────────────────────────────────────────────── */
+.contact { background: var(--ink2); }
+.contact-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 64px 48px;
+  text-align: center; position: relative; overflow: hidden;
+  margin-top: 40px;
+}
+.contact-box::before {
+  content: ''; position: absolute; top: 0; left: 50%;
+  transform: translateX(-50%); width: 440px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.38), transparent);
+}
+.contact-box h2 {
+  font-size: clamp(24px, 4vw, 44px); font-weight: 800;
+  letter-spacing: -1.2px; margin-bottom: 14px;
+}
+.contact-box > p {
+  color: var(--muted); font-size: 16px;
+  max-width: 440px; margin: 0 auto 36px; line-height: 1.8;
+}
+.contact-form {
+  display: flex; flex-direction: column; gap: 12px;
+  max-width: 440px; margin: 0 auto;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-input {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 15px; color: var(--text);
+  font-size: 14px; font-family: inherit; outline: none;
+  transition: border-color 0.2s; width: 100%;
+}
+.form-input:focus { border-color: rgba(58,122,106,0.42); }
+.form-input::placeholder { color: var(--muted); }
+select.form-input { appearance: none; cursor: pointer; }
+.form-submit {
+  background: var(--gold); color: #0a0c0b; border: none;
+  padding: 15px; border-radius: 8px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+  box-shadow: 0 0 36px rgba(201,168,76,0.18);
+}
+.form-submit:hover {
+  box-shadow: 0 0 54px rgba(201,168,76,0.34);
+  transform: translateY(-1px);
+}
+.form-note { font-size: 12px; color: var(--muted); }
+
+/* ─── FOOTER ──────────────────────────────────────────────────── */
+footer {
+  padding: 40px 40px; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 18px;
+}
+.footer-logo {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800; font-size: 18px; color: var(--gold-lt);
+}
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a {
+  color: var(--muted); text-decoration: none;
+  font-size: 13px; transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--text); }
+.footer-copy { color: var(--muted); font-size: 12px; }
+
+/* ─── MOBILE ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  nav { padding: 0 20px; }
+  .nav-links { display: none; }
+  .nav-hamburger { display: flex; }
+
+  section { padding: 72px 20px; }
+  .hero { padding: calc(var(--nav-h) + 40px) 20px 60px; }
+
+  h1.hero-title { letter-spacing: -1px; }
+  .hero-trust { gap: 24px; padding-top: 32px; margin-top: 48px; }
+  .trust-num { font-size: 24px; }
+
+  .problems-grid,
+  .products-grid,
+  .why-grid,
+  .pricing-grid,
+  .process-steps { grid-template-columns: 1fr; }
+
+  .products-grid .product-card.full { grid-column: auto; }
+
+  .demo-panel.active { grid-template-columns: 1fr; }
+  .chat-widget { height: 440px; }
+
+  .stats-hero { grid-template-columns: 1fr; }
+  .stats-cell:nth-child(2) { border-left: none; border-top: 1px solid var(--border); }
+  .stats-grid { grid-template-columns: 1fr; }
+
+  .contact-box { padding: 40px 24px; }
+  .form-row { grid-template-columns: 1fr; }
+
+  footer { padding: 32px 20px; flex-direction: column; align-items: flex-start; }
+  .footer-links { display: none; }
+
+  .why-grid { gap: 36px; }
+}
+
+@media (max-width: 600px) {
+  .pricing-grid { grid-template-columns: 1fr; }
+  .process-steps { grid-template-columns: 1fr 1fr; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .demo-tabs { gap: 6px; }
+  .demo-tab { padding: 8px 14px; font-size: 12px; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-ghost { width: 100%; max-width: 320px; text-align: center; }
+  .launch-banner { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Axon</a>
+  <div class="nav-links">
+    <a href="#producten">Producten</a>
+    <a href="#demo">Live demo</a>
+    <a href="#tarieven">Tarieven</a>
+    <a href="#contact" class="nav-cta">Gratis gesprek</a>
+  </div>
+  <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="nav-mobile" id="nav-mobile">
+  <a href="#producten" onclick="closeMenu()">Producten</a>
+  <a href="#demo" onclick="closeMenu()">Live demo</a>
+  <a href="#tarieven" onclick="closeMenu()">Tarieven</a>
+  <a href="#contact" class="nav-cta-mobile" onclick="closeMenu()">Gratis gesprek plannen</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      AI Automatisering &nbsp;·&nbsp; Nederland
+    </div>
+    <h1 class="hero-title">Uw bedrijf werkt.<br><em>Dag en nacht.</em></h1>
+    <p class="hero-sub">Wij bouwen AI-chatbots en automatiseringsoplossingen voor het Nederlandse MKB. U regelt het bedrijf, wij regelen de rest. Binnen een week live.</p>
+    <div class="hero-actions">
+      <a href="#demo" class="btn-primary">Bekijk live demo</a>
+      <a href="#contact" class="btn-ghost">Gratis gesprek plannen</a>
+    </div>
+    <div class="hero-trust">
+      <div class="trust-item">
+        <div class="trust-num">24/7</div>
+        <div class="trust-label">Bereikbaar voor uw klanten</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-num">&lt;1 week</div>
+        <div class="trust-label">Van intake tot live</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-num">Vast tarief</div>
+        <div class="trust-label">Geen verrassingen achteraf</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEMS -->
+<section class="problems">
+  <div class="container">
+    <div class="section-tag reveal">Het probleem</div>
+    <h2 class="section-title reveal">Elke gemiste lead<br>kost u geld.</h2>
+    <p class="section-sub reveal">Meer dan 60% van uw potentiële klanten neemt contact op buiten kantooruren. Geen antwoord betekent een gemiste kans, en die klant gaat naar iemand anders.</p>
+    <div class="problems-grid reveal">
+      <div class="problem-card">
+        <div class="problem-icon">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>Gemiste leads na sluitingstijd</h3>
+        <p>35 tot 45% van bezoekers die geen antwoord krijgen bellen niet terug. Ze gaan naar de concurrent die wel reageert.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3>Dezelfde vragen, keer op keer</h3>
+        <p>Openingstijden, prijzen, beschikbaarheid. Uw team beantwoordt dezelfde vragen tientallen keren per week. Dat kan slimmer.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <h3>Trage opvolging van aanvragen</h3>
+        <p>Een lead die een uur wacht is zeven keer minder geneigd te converteren dan een lead die direct antwoord krijgt.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTEN -->
+<section id="producten">
+  <div class="container">
+    <div class="section-tag reveal">Wat we bouwen</div>
+    <h2 class="section-title reveal">Twee producten.<br>Eén doel: meer tijd.</h2>
+    <p class="section-sub reveal">Geen complexe software die u zelf moet beheren. Wij regelen alles van A tot Z.</p>
+    <div class="products-grid" style="margin-top:52px;">
+      <div class="product-card reveal">
+        <div class="product-tag">Website Chatbot</div>
+        <h3>AI-assistent op uw website</h3>
+        <p>Een chatbot die vragen beantwoordt, leads vastlegt en afspraken inplant. Ook om 23:00 uur, ook op zondag.</p>
+        <ul class="feat-list">
+          <li>Veelgestelde vragen automatisch beantwoorden</li>
+          <li>Contactgegevens vastleggen en doorsturen</li>
+          <li>Koppeling met uw agenda voor afspraken</li>
+          <li>Doorschakeling naar u bij complexe vragen</li>
+          <li>In de huisstijl en toon van uw bedrijf</li>
+        </ul>
+      </div>
+      <div class="product-card reveal">
+        <div class="product-tag">E-mail en WhatsApp</div>
+        <h3>Automatische opvolgstromen</h3>
+        <p>Workflows die leads opvolgen, bevestigingen sturen en Google-reviews verzamelen, zonder dat u er iets voor hoeft te doen.</p>
+        <ul class="feat-list">
+          <li>Automatische opvolgmail na elke aanvraag</li>
+          <li>WhatsApp Business API automatisering</li>
+          <li>Afspraakbevestigingen en herinneringen</li>
+          <li>Gepersonaliseerde berichten per klanttype</li>
+          <li>Koppeling met uw bestaande systemen</li>
+        </ul>
+      </div>
+      <div class="product-card full reveal">
+        <div class="product-tag teal">Add-on</div>
+        <h3 style="max-width:520px;">Google Reviews op de automatische piloot</h3>
+        <p style="max-width:560px;">Twee dagen na een afgeronde afspraak stuurt het systeem automatisch een vriendelijk reviewverzoek. Meer beoordelingen, meer vertrouwen, meer klanten. Lokale bedrijven zien gemiddeld drie keer meer reviews in de eerste maand.</p>
+        <ul class="feat-list" style="flex-direction:row;flex-wrap:wrap;gap:8px 28px;margin-top:16px;">
+          <li>Eenmalige setup</li>
+          <li>Volledig geautomatiseerd</li>
+          <li>Koppeling met uw agenda</li>
+          <li>Geen handmatig werk</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo" class="demos-bg">
+  <div class="container">
+    <div class="section-tag reveal">Live demo</div>
+    <h2 class="section-title reveal">Kies uw branche.<br>Chat direct.</h2>
+    <p class="section-sub reveal">Dit zijn echte voorbeeldbots zoals wij ze bouwen voor onze klanten. Stel een vraag en zie hoe het in de praktijk werkt.</p>
+    <div class="demo-tabs reveal">
+      <button class="demo-tab active" onclick="switchDemo('horeca',this)">Horeca</button>
+      <button class="demo-tab" onclick="switchDemo('sport',this)">Sportschool</button>
+      <button class="demo-tab" onclick="switchDemo('salon',this)">Kapsalon</button>
+      <button class="demo-tab" onclick="switchDemo('makelaar',this)">Makelaar</button>
+    </div>
+
+    <!-- HORECA -->
+    <div class="demo-panel active" id="demo-horeca">
+      <div class="demo-info">
+        <h3>Horeca Reserveringsbot</h3>
+        <p>Beantwoordt vragen over openingstijden, menu en allergenen. Neemt reserveringen aan en stuurt ze direct door naar de eigenaar.</p>
+        <ul class="demo-cases">
+          <li>Reserveringen ook om middernacht</li>
+          <li>Allergeninformatie altijd beschikbaar</li>
+          <li>Dag menu en specials communiceren</li>
+          <li>Telefonische druk drastisch verminderen</li>
+        </ul>
+        <a href="#contact" class="btn-primary">Dit wil ik voor mijn restaurant</a>
+      </div>
+      <div class="chat-widget">
+        <div class="chat-head">
+          <div class="chat-avatar" style="background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.2);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--gold-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+          </div>
+          <div class="chat-head-info"><h4>Bella Cucina</h4><p>Reserveringen &amp; informatie</p></div>
+          <div class="online-dot"></div>
+        </div>
+        <div class="chat-messages" id="msgs-horeca">
+          <div class="msg msg-bot"><div class="msg-bubble">Welkom bij Bella Cucina! Ik help u graag met reserveringen, vragen over het menu of openingstijden. Waar kan ik u mee helpen?</div><div class="msg-time">nu</div></div>
+        </div>
+        <div class="chat-input-area">
+          <input class="chat-input" id="input-horeca" placeholder="Stel een vraag..." onkeydown="if(event.key==='Enter')sendMsg('horeca')">
+          <button class="chat-send" onclick="sendMsg('horeca')"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
+        </div>
+        <div class="chat-foot">Voorbeeldbot &middot; Powered by Axon</div>
+      </div>
+    </div>
+
+    <!-- MAKELAAR -->
+    <div class="demo-panel" id="demo-makelaar">
+      <div class="demo-info">
+        <h3>Makelaar Leadbot</h3>
+        <p>Kwalificeert bezoekers automatisch, vraagt wensen op en plant kennismakingsgesprekken in. Elke aanvraag direct vastgelegd.</p>
+        <ul class="demo-cases">
+          <li>Woningwensen opvragen en vastleggen</li>
+          <li>Bezichtigingen automatisch inplannen</li>
+          <li>Leads direct naar uw CRM sturen</li>
+          <li>Nooit meer een aanvraag missen</li>
+        </ul>
+        <a href="#contact" class="btn-primary">Dit wil ik voor mijn kantoor</a>
+      </div>
+      <div class="chat-widget">
+        <div class="chat-head">
+          <div class="chat-avatar" style="background:rgba(86,166,144,0.1);border-color:rgba(86,166,144,0.2);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="chat-head-info"><h4>Huijsen Makelaars</h4><p>Woningzoekers &amp; aanbod</p></div>
+          <div class="online-dot"></div>
+        </div>
+        <div class="chat-messages" id="msgs-makelaar">
+          <div class="msg msg-bot"><div class="msg-bubble">Goedemiddag! Ik ben de assistent van Huijsen Makelaars. Bent u op zoek naar een woning, wilt u verkopen, of heeft u een andere vraag?</div><div class="msg-time">nu</div></div>
+        </div>
+        <div class="chat-input-area">
+          <input class="chat-input" id="input-makelaar" placeholder="Stel een vraag..." onkeydown="if(event.key==='Enter')sendMsg('makelaar')">
+          <button class="chat-send" onclick="sendMsg('makelaar')"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
+        </div>
+        <div class="chat-foot">Voorbeeldbot &middot; Powered by Axon</div>
+      </div>
+    </div>
+
+    <!-- SPORT -->
+    <div class="demo-panel" id="demo-sport">
+      <div class="demo-info">
+        <h3>Sportschool FAQ-bot</h3>
+        <p>Beantwoordt vragen over lidmaatschappen en roosters, plant proeftrainingen in terwijl uw team bezig is.</p>
+        <ul class="demo-cases">
+          <li>Abonnementsinfo 24/7 beschikbaar</li>
+          <li>Proeftrainingen automatisch inplannen</li>
+          <li>Roostervragen direct beantwoorden</li>
+          <li>Nieuwe leden kwalificeren en vastleggen</li>
+        </ul>
+        <a href="#contact" class="btn-primary">Dit wil ik voor mijn sportschool</a>
+      </div>
+      <div class="chat-widget">
+        <div class="chat-head">
+          <div class="chat-avatar" style="background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.18);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--gold-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8H18M2 8h1a4 4 0 0 0 0 8H2"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+          </div>
+          <div class="chat-head-info"><h4>FitZone Assistent</h4><p>Lidmaatschap &amp; roosters</p></div>
+          <div class="online-dot"></div>
+        </div>
+        <div class="chat-messages" id="msgs-sport">
+          <div class="msg msg-bot"><div class="msg-bubble">Hey! Welkom bij FitZone. Ik help je met vragen over lidmaatschappen, roosters of het inplannen van een gratis proeftraining!</div><div class="msg-time">nu</div></div>
+        </div>
+        <div class="chat-input-area">
+          <input class="chat-input" id="input-sport" placeholder="Stel een vraag..." onkeydown="if(event.key==='Enter')sendMsg('sport')">
+          <button class="chat-send" onclick="sendMsg('sport')"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
+        </div>
+        <div class="chat-foot">Voorbeeldbot &middot; Powered by Axon</div>
+      </div>
+    </div>
+
+    <!-- SALON -->
+    <div class="demo-panel" id="demo-salon">
+      <div class="demo-info">
+        <h3>Kapsalon Afspraakbot</h3>
+        <p>Plant afspraken in, beantwoordt vragen over behandelingen en prijzen, en stuurt automatisch een bevestiging. Zodat de telefoon kan zwijgen.</p>
+        <ul class="demo-cases">
+          <li>Afspraken boeken buiten openingstijden</li>
+          <li>Behandelingen en prijzen uitleggen</li>
+          <li>Bevestigingen en herinneringen sturen</li>
+          <li>Stijlwensen en haartype vastleggen</li>
+        </ul>
+        <a href="#contact" class="btn-primary">Dit wil ik voor mijn salon</a>
+      </div>
+      <div class="chat-widget">
+        <div class="chat-head">
+          <div class="chat-avatar" style="background:rgba(86,166,144,0.1);border-color:rgba(86,166,144,0.2);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <div class="chat-head-info"><h4>Studio Nora</h4><p>Afspraken &amp; behandelingen</p></div>
+          <div class="online-dot"></div>
+        </div>
+        <div class="chat-messages" id="msgs-salon">
+          <div class="msg msg-bot"><div class="msg-bubble">Hallo! Welkom bij Studio Nora. Ik help je graag met het inplannen van een afspraak of beantwoord je vragen over onze behandelingen.</div><div class="msg-time">nu</div></div>
+        </div>
+        <div class="chat-input-area">
+          <input class="chat-input" id="input-salon" placeholder="Stel een vraag..." onkeydown="if(event.key==='Enter')sendMsg('salon')">
+          <button class="chat-send" onclick="sendMsg('salon')"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
+        </div>
+        <div class="chat-foot">Voorbeeldbot &middot; Powered by Axon</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section class="why">
+  <div class="container">
+    <div class="section-tag reveal">Waarom Axon</div>
+    <h2 class="section-title reveal">Afspraken zijn<br>afspraken.</h2>
+    <div class="why-grid">
+      <div class="compare-table reveal">
+        <div class="compare-row head">
+          <div class="compare-cell"></div>
+          <div class="compare-cell us">Axon</div>
+          <div class="compare-cell">Anderen</div>
+        </div>
+        <div class="compare-row"><div class="compare-cell">Vaste prijs</div><div class="compare-cell us">Altijd</div><div class="compare-cell">Zelden</div></div>
+        <div class="compare-row"><div class="compare-cell">Opleverdatum</div><div class="compare-cell us">Binnen 1 week</div><div class="compare-cell">4 tot 8 weken</div></div>
+        <div class="compare-row"><div class="compare-cell">Technische kennis nodig</div><div class="compare-cell us">Nul</div><div class="compare-cell">Soms</div></div>
+        <div class="compare-row"><div class="compare-cell">Onderhoud inbegrepen</div><div class="compare-cell us">Ja</div><div class="compare-cell">Extra kosten</div></div>
+        <div class="compare-row"><div class="compare-cell">Setup-kosten</div><div class="compare-cell us">Vanaf €199</div><div class="compare-cell">Vanaf €2.500</div></div>
+        <div class="compare-row"><div class="compare-cell">AVG-compliant</div><div class="compare-cell us">Altijd</div><div class="compare-cell">Soms</div></div>
+      </div>
+      <div class="why-points reveal">
+        <div class="why-point">
+          <div class="why-point-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          <div><h4>Binnen een week live</h4><p>Van intake tot werkende chatbot in vijf werkdagen. Geen maanden wachten op een offerte die nergens op slaat.</p></div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.41 13.14M4.93 4.93a10 10 0 0 0-1.41 13.14"/></svg></div>
+          <div><h4>Werkt met wat u al heeft</h4><p>Koppeling met uw bestaande agenda, CRM, e-mail en website. Niets vervangen, niets weggooien.</p></div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div><h4>AVG-compliant</h4><p>Verwerkersovereenkomst bij elke opdracht. Uw klantdata blijft in Nederland, geen Amerikaanse servers.</p></div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.68 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.59 1.2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 5.86 5.86l1.18-.92a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 21.7 16h.22z"/></svg></div>
+          <div><h4>Direct aanspreekbaar</h4><p>Geen helpdesk, geen ticketsysteem. U belt ons. Reactie binnen twee werkdagen, standaard inbegrepen.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="tarieven" class="pricing">
+  <div class="container">
+    <div class="section-tag reveal">Tarieven</div>
+    <h2 class="section-title reveal">Transparante prijzen.<br>Geen verrassingen.</h2>
+    <p class="section-sub reveal" style="margin-bottom:32px;">Vaste setup-prijs, vaste maandelijkse retainer. Alles vooraf helder.</p>
+
+    <div class="launch-banner reveal">
+      <div class="launch-banner-dot"></div>
+      <p><strong>Lanceringsprijs:</strong> De eerste 5 klanten krijgen de setup voor de helft van de reguliere prijs. Er zijn nog 3 plekken beschikbaar.</p>
+    </div>
+
+    <div class="pricing-grid reveal">
+
+      <!-- STARTER -->
+      <div class="pricing-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-desc">Een chatbot op uw website. Ideaal als eerste stap met automatisering.</div>
+        <div class="price-block">
+          <div class="price-launch">
+            <div class="price-amount">€99</div>
+            <div class="price-per">/mnd</div>
+          </div>
+          <div class="price-setup">Eenmalige setup: <strong style="color:var(--text);">€199</strong> <span style="text-decoration:line-through;opacity:0.45;">€299</span></div>
+          <div class="price-note">Lanceringsprijs, regulier €299</div>
+        </div>
+        <ul class="plan-features">
+          <li>1 website chatbot op maat</li>
+          <li>Tot 500 gesprekken per maand</li>
+          <li>Koppeling met uw agenda</li>
+          <li>Onderhoud en hosting inbegrepen</li>
+          <li>Support binnen 2 werkdagen</li>
+          <li>AVG-verwerkersovereenkomst</li>
+        </ul>
+        <a href="#contact" class="plan-cta ghost">Gesprek plannen</a>
+      </div>
+
+      <!-- GROEI -->
+      <div class="pricing-card featured">
+        <div class="plan-name">Groei</div>
+        <div class="plan-desc">Chatbot plus e-mail en WhatsApp automatisering. Het complete pakket.</div>
+        <div class="price-block">
+          <div class="price-launch">
+            <div class="price-amount">€175</div>
+            <div class="price-per">/mnd</div>
+          </div>
+          <div class="price-setup">Eenmalige setup: <strong style="color:var(--text);">€350</strong> <span style="text-decoration:line-through;opacity:0.45;">€550</span></div>
+          <div class="price-note">Lanceringsprijs, regulier €550</div>
+        </div>
+        <ul class="plan-features">
+          <li>Website chatbot plus e-mail en WhatsApp</li>
+          <li>Tot 1.500 gesprekken per maand</li>
+          <li>Google Review flow inbegrepen</li>
+          <li>CRM-koppeling inbegrepen</li>
+          <li>Prioriteit support</li>
+          <li>Maandelijkse optimalisatie</li>
+          <li>AVG-verwerkersovereenkomst</li>
+        </ul>
+        <a href="#contact" class="plan-cta primary">Gesprek plannen</a>
+      </div>
+
+      <!-- MAATWERK -->
+      <div class="pricing-card">
+        <div class="plan-name">Maatwerk</div>
+        <div class="plan-desc">Specifieke koppelingen of een volledig op maat gemaakte oplossing voor uw bedrijf.</div>
+        <div class="price-block">
+          <div class="price-launch">
+            <div class="price-amount" style="font-size:28px;letter-spacing:-1px;margin-top:6px;">Op aanvraag</div>
+          </div>
+          <div class="price-setup">&nbsp;</div>
+          <div class="price-note" style="opacity:0;">&nbsp;</div>
+        </div>
+        <ul class="plan-features">
+          <li>Alles uit het Groei-pakket</li>
+          <li>Meerdere chatbots of workflows</li>
+          <li>CRM of ERP-koppelingen op maat</li>
+          <li>Multi-kanaal integraties</li>
+          <li>Dedicated contactpersoon</li>
+        </ul>
+        <a href="#contact" class="plan-cta ghost">Contact opnemen</a>
+      </div>
+
+    </div>
+    <p class="pricing-sub reveal">Alle prijzen exclusief BTW. Maandelijks opzegbaar na een minimale looptijd van 3 maanden. Opzegtermijn 1 maand.</p>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="process">
+  <div class="container">
+    <div class="section-tag reveal">Werkwijze</div>
+    <h2 class="section-title reveal">Van gesprek naar live<br>in vier stappen.</h2>
+    <div class="process-steps">
+      <div class="step-card reveal">
+        <div class="step-num">01</div>
+        <h3>Gratis gesprek</h3>
+        <p>30 minuten. We begrijpen uw bedrijf en wensen. Geen verkooppraatje, wel een eerlijk advies.</p>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">02</div>
+        <h3>Voorstel en akkoord</h3>
+        <p>Helder voorstel met vaste prijs en een concrete opleverdatum. Geen vage offertes, geen verborgen kosten.</p>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">03</div>
+        <h3>Wij bouwen</h3>
+        <p>Onze specialisten bouwen en testen alles grondig. Binnen vijf werkdagen klaar voor oplevering.</p>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">04</div>
+        <h3>Live en onderhoud</h3>
+        <p>We leveren op, begeleiden de installatie en zorgen maandelijks dat alles optimaal blijft werken.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="contact">
+  <div class="container">
+    <div class="section-tag reveal">Contact</div>
+    <div class="contact-box reveal">
+      <h2>Klaar om te starten?</h2>
+      <p>Plan een gratis gesprek van 30 minuten. Geen verplichtingen, geen technisch jargon.</p>
+      <form class="contact-form" onsubmit="handleSubmit(event)">
+        <div class="form-row">
+          <input type="text" class="form-input" placeholder="Uw naam" required>
+          <input type="text" class="form-input" placeholder="Bedrijfsnaam" required>
+        </div>
+        <input type="email" class="form-input" placeholder="E-mailadres" required>
+        <input type="tel" class="form-input" placeholder="Telefoonnummer (optioneel)">
+        <select class="form-input">
+          <option value="" disabled selected>Uw sector</option>
+          <option>Horeca en Restaurant</option>
+          <option>Makelaar en Vastgoed</option>
+          <option>Sportschool en Fitness</option>
+          <option>Bouw en Installatie</option>
+          <option>Webshop en E-commerce</option>
+          <option>Anders</option>
+        </select>
+        <select class="form-input">
+          <option value="" disabled selected>Interesse in...</option>
+          <option>Website Chatbot (Starter)</option>
+          <option>Groei-pakket (Chatbot + E-mail/WhatsApp)</option>
+          <option>Maatwerk</option>
+          <option>Weet ik nog niet</option>
+        </select>
+        <button type="submit" class="form-submit">Gratis gesprek aanvragen &rarr;</button>
+        <p class="form-note">Wij reageren binnen één werkdag. Geen spam, geen verplichtingen.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- STATS - Bewezen resultaten -->
+<section class="stats" id="resultaten" style="background:var(--ink2);">
+  <div class="container">
+    <div class="section-tag reveal">Bewezen resultaten</div>
+    <h2 class="section-title reveal">Wat de cijfers zeggen.</h2>
+    <p class="section-sub reveal" style="margin-bottom:52px;">Onderzoeksresultaten van McKinsey, Salesforce, Juniper Research en Harvard Business Review over bedrijven die AI-automatisering hebben ingezet.</p>
+
+    <div class="stats-hero reveal">
+      <div class="stats-cell">
+        <div class="stats-cell-num">3–6</div>
+        <div class="stats-cell-label">maanden terugverdientijd</div>
+        <div class="stats-cell-sub">Goed opgezette chatbots bereiken gemiddeld breakeven binnen drie tot zes maanden.<br><span style="font-size:11px;opacity:0.55;">Juniper Research, 2025</span></div>
+      </div>
+      <div class="stats-cell">
+        <div class="stats-cell-num">€3,70</div>
+        <div class="stats-cell-label">opbrengst per geïnvesteerde euro</div>
+        <div class="stats-cell-sub">Gemiddeld rendement op AI-investering voor bedrijven die generatieve AI inzetten.<br><span style="font-size:11px;opacity:0.55;">McKinsey Global Survey, 2024</span></div>
+      </div>
+      <div class="stats-cell">
+        <div class="stats-cell-num">148%</div>
+        <div class="stats-cell-label">gemiddeld ROI in jaar 1</div>
+        <div class="stats-cell-sub">Geïntegreerde chatbot-implementaties rapporteren gemiddeld 148 tot 200% rendement in het eerste jaar.<br><span style="font-size:11px;opacity:0.55;">AppVerticals / Juniper Research, 2026</span></div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card reveal">
+        <div class="stat-card-head">
+          <div class="stat-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <h3>Buiten kantooruren verloren leads</h3>
+        </div>
+        <div class="stat-big">35–45% <span>van aanvragen</span></div>
+        <p>Van alle potentiële klanten die buiten openingstijden contact opnemen en geen antwoord krijgen, belt het grootste deel niet terug. Ze gaan naar een concurrent die wel reageert.</p>
+        <div class="stat-callout">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Een chatbot vangt 100% van die aanvragen op, ook om 23:00 uur.
+        </div>
+        <div class="stat-source">Harvard Business Review / Aurora Inbox, 2025</div>
+      </div>
+      <div class="stat-card reveal">
+        <div class="stat-card-head">
+          <div class="stat-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <h3>Snelheid van reactie is conversie</h3>
+        </div>
+        <div class="stat-big">21× <span>hogere conversiekans</span></div>
+        <p>Bedrijven die binnen 5 minuten reageren op een aanvraag converteren die lead 21 keer vaker dan bedrijven die 30 minuten of langer wachten. Een AI-chatbot reageert binnen 3 seconden.</p>
+        <div class="stat-callout">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Bedrijven met een AI-chatbot zien gemiddeld 20 tot 35% meer conversies.
+        </div>
+        <div class="stat-source">Harvard Business Review / Aurora Inbox, 2025</div>
+      </div>
+      <div class="stat-card reveal">
+        <div class="stat-card-head">
+          <div class="stat-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <h3>MKB loopt in op grote bedrijven</h3>
+        </div>
+        <div class="stat-big">58% <span>van MKB gebruikt al generatieve AI</span></div>
+        <p>In 2024 gebruikte 40% van het MKB generatieve AI. In 2025 is dat gestegen naar 58%. De snelste groei zit bij bedrijven met 5 tot 50 medewerkers. Niet starten betekent achterstand opbouwen.</p>
+        <div class="stat-callout">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          MKB met AI groeit 2,5 keer sneller in omzet dan zonder.
+        </div>
+        <div class="stat-source">SBA Office of Advocacy / Salesforce SMB Trends, 2025</div>
+      </div>
+      <div class="stat-card reveal">
+        <div class="stat-card-head">
+          <div class="stat-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--teal-lt)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <h3>Tijdsbesparing op herhalende taken</h3>
+        </div>
+        <div class="stat-big">30–50% <span>minder klantenservice-kosten</span></div>
+        <p>80% van klantvragen zijn herhalend en voorspelbaar. Automatisering vangt die af zodat uw team zich richt op de 20% die echte menselijke aandacht verdient.</p>
+        <div class="stat-callout">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          53% van MKB-eigenaren ziet direct een betere klantervaring.
+        </div>
+        <div class="stat-source">IBM / Salesforce / Aristek Systems, 2024–2025</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Axon</div>
+  <div class="footer-links">
+    <a href="#producten">Producten</a>
+    <a href="#tarieven">Tarieven</a>
+    <a href="#demo">Demo</a>
+    <a href="#">Privacybeleid</a>
+    <a href="#">Algemene Voorwaarden</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 Axon &nbsp;&middot;&nbsp; KVK: [nummer]</div>
+</footer>
+
+<script>
+// ─── Mobile nav ────────────────────────────────────────────────
+const hamburger = document.getElementById('hamburger');
+const navMobile = document.getElementById('nav-mobile');
+hamburger.addEventListener('click', () => {
+  navMobile.classList.toggle('open');
+});
+function closeMenu() {
+  navMobile.classList.remove('open');
+}
+
+// ─── Scroll reveal ─────────────────────────────────────────────
+const obs = new IntersectionObserver(
+  entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+  { threshold: 0.07, rootMargin: '0px 0px -24px 0px' }
+);
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// ─── Demo tabs ─────────────────────────────────────────────────
+function switchDemo(id, btn) {
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('demo-' + id).classList.add('active');
+}
+
+// ─── Chat personas ─────────────────────────────────────────────
+const personas = {
+  horeca: `Je bent de vriendelijke digitale assistent van Bella Cucina, een Italiaans restaurant in Amsterdam. Je voert echte gesprekken en helpt gasten concreet verder.
+
+BEDRIJFSINFO:
+- Naam: Bella Cucina, Keizersgracht 142, Amsterdam
+- Openingstijden: dinsdag t/m zaterdag 12:00-22:00, zondag 12:00-20:00, maandag gesloten
+- Reserveringen via chat of 020-1234567
+- Keuken: Authentiek Italiaans, seizoensgebonden menu, verse pasta gemaakt in eigen keuken
+- Tafels voor 2 tot 12 personen
+- Glutenvrij pasta beschikbaar, vegan opties altijd aanwezig
+- Populaire gerechten: Cacio e Pepe, Ossobuco, Tiramisu van het huis
+- Gemiddelde hoofdgerecht: €22-28
+- Parkeren: betaald parkeren in de omgeving, beste optie is P-garage Jordaan (5 min lopen)
+- Terras in de zomer (april-september)
+
+Gedragsregels:
+- Spreek gasten aan met "u", warm en persoonlijk
+- Reageer altijd specifiek op wat de gast vraagt, geef nooit een generiek antwoord
+- Bij reserveringsverzoek: vraag datum, tijdstip, aantal personen en naam. Vraag ook of er allergenen zijn.
+- Als iemand al datum/tijd/personen noemt: bevestig die info direct en vraag alleen nog wat ontbreekt
+- Bij vragen over het menu: beschrijf gerechten met details, maak het smakelijk
+- Nooit vermelden dat je een bot of AI bent
+- Houd antwoorden kort: maximaal 3 zinnen, tenzij een langere uitleg echt nodig is`,
+
+  sport: `Je bent de enthousiaste assistent van FitZone Rotterdam. Je helpt bezoekers snel en concreet verder.
+
+BEDRIJFSINFO:
+- Naam: FitZone Rotterdam, Coolsingel 88
+- Openingstijden: maandag t/m vrijdag 6:00-23:00, zaterdag en zondag 8:00-22:00
+- Lidmaatschappen:
+  * Basis: €29/mnd — onbeperkt cardio en gewichten
+  * Plus: €39/mnd — alles van Basis + alle groepslessen
+  * Premium: €49/mnd — alles van Plus + 1 PT-sessie per maand inbegrepen
+- Proeftraining: altijd gratis, geen verplichtingen, direct inplannen
+- Groepslessen: spinning, yoga, bootcamp, kickboxing, pilates (rooster op aanvraag)
+- Faciliteiten: 200+ machines, vrije gewichten, cardiozone, sauna (Plus+), kleedkamers met lockers
+- Geen inschrijfgeld, geen contracten, maandelijks opzegbaar
+- Parkeren: gratis parkeerplaats achter het gebouw
+
+Gedragsregels:
+- Spreek bezoekers aan met jij/je, enthousiast maar niet overdreven
+- Reageer altijd specifiek op de vraag, geef concrete informatie
+- Noem altijd de gratis proeftraining als iemand twijfelt of interesse toont
+- Bij afspraakvraag: vraag naam, e-mailadres en gewenste dag/tijd
+- Als iemand al een specifieke les of optie noemt: ga daar direct op in
+- Nooit vermelden dat je een bot of AI bent
+- Houd antwoorden kort: maximaal 3 zinnen`,
+
+  salon: `Je bent de vriendelijke assistent van Studio Nora, een kapsalon in Amsterdam. Je helpt klanten met afspraken en vragen.
+
+BEDRIJFSINFO:
+- Naam: Studio Nora, Haarlemmerdijk 63, Amsterdam
+- Openingstijden: dinsdag t/m vrijdag 9:00-19:00, zaterdag 9:00-17:00, maandag en zondag gesloten
+- Afspraken: via chat of 020-9876543
+- Behandelingen en prijzen:
+  * Knippen (dames): €45
+  * Knippen (heren): €28
+  * Knippen + föhnen: €60
+  * Knippen + kleuren: vanaf €95
+  * Balayage of highlights: vanaf €120
+  * Keratinebehandeling: €150
+  * Consult nieuw kleur: gratis, 15 minuten
+- Specialiteit: natuurlijk haar, balayage, curly hair methode
+- Producten: uitsluitend duurzame en sulfaatvrije producten
+- Parkeergelegenheid in de buurt: beperkt, fiets of OV aangeraden
+
+Gedragsregels:
+- Vriendelijk en persoonlijk, spreek klanten aan met je/jij
+- Reageer altijd specifiek op wat gevraagd wordt
+- Bij afspraakverzoek: vraag behandeling, gewenste datum en tijd, naam en telefoonnummer
+- Als iemand al behandeling/datum noemt: bevestig dat direct en vraag alleen wat ontbreekt
+- Bij twijfel over behandeling: stel een gratis kleurconsult voor
+- Nooit vermelden dat je een bot of AI bent
+- Houd antwoorden kort: maximaal 3 zinnen`,
+
+  makelaar: `Je bent de professionele assistent van Huijsen Makelaars in Utrecht. Je helpt woningzoekers en verkopers concreet verder.
+
+BEDRIJFSINFO:
+- Naam: Huijsen Makelaars, Oudegracht 45, Utrecht
+- Openingstijden: maandag t/m vrijdag 9:00-17:30, zaterdag op afspraak
+- Werkgebied: Utrecht stad en provincie (Zeist, Nieuwegein, Houten, IJsselstein)
+- Diensten: aankoop, verkoop, verhuur, taxaties
+- Aankoopbegeleiding: alle bezichtigingen samen, onderhandeling, juridische afhandeling
+- Verkooptraject: waardebepaling, professionele fotografie, Funda-plaatsing, onderhandelingen
+- Kennismakingsgesprek: altijd gratis en vrijblijvend, ook telefonisch
+- NVM-gecertificeerd, lid van VastgoedPRO
+- Gemiddelde verkooptijd in portefeuille: 28 dagen
+
+Gedragsregels:
+- Spreek klanten aan met u, professioneel maar toegankelijk
+- Reageer altijd specifiek op de vraag
+- Bij woningzoekers: vraag locatie, type woning, budget en wanneer ze willen betrekken
+- Bij verkopers: vraag adres en wanneer ze willen verkopen. Bied altijd gratis waardebepaling aan.
+- Nooit vermelden dat je een bot of AI bent
+- Houd antwoorden kort: maximaal 3 zinnen`
+};
+
+const histories = { horeca: [], sport: [], salon: [], makelaar: [] };
+
+async function callClaude(persona, messages) {
+  try {
+    const res = await fetch('https://api.axon.nl/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: 'demo-' + persona, messages })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.reply;
+    }
+  } catch (e) { /* proxy niet beschikbaar */ }
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': window.AXON_DEMO_KEY || '',
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 300,
+      system: personas[persona],
+      messages: messages
+    })
+  });
+
+  if (!res.ok) return getDemoFallback(persona, messages[messages.length - 1]?.content || '');
+  const data = await res.json();
+  return data.content?.[0]?.text || 'Er ging iets mis. Probeer het opnieuw.';
+}
+
+function getDemoFallback(persona, question) {
+  const q = question.toLowerCase();
+
+  if (persona === 'horeca') {
+    if (q.includes('reserv') || q.includes('tafel') || q.includes('boek'))
+      return 'Natuurlijk! Voor welke datum, hoe laat en met hoeveel personen? En op welke naam zet ik de reservering?';
+    if (q.includes('open') || q.includes('tijden') || q.includes('gesloten') || q.includes('wanneer'))
+      return 'Wij zijn open dinsdag t/m zaterdag van 12:00 tot 22:00 uur, en zondag van 12:00 tot 20:00 uur. Op maandag zijn wij gesloten.';
+    if (q.includes('menu') || q.includes('eten') || q.includes('gerecht') || q.includes('pasta'))
+      return 'Ons menu is seizoensgebonden Italiaans met verse pasta uit eigen keuken. Populaire keuzes zijn de Cacio e Pepe, Ossobuco en onze huistiramisu. Wilt u een tafel reserveren?';
+    if (q.includes('allerg') || q.includes('glutenvrij') || q.includes('vegan') || q.includes('intolerantie'))
+      return 'Wij bieden glutenvrije pasta en vegan gerechten aan. Vermeld allergenen bij de reservering, dan zorgen we dat alles goed is afgestemd.';
+    if (q.includes('park') || q.includes('auto') || q.includes('auto'))
+      return 'Betaald parkeren in de omgeving, de P-garage Jordaan is 5 minuten lopen en heeft altijd plek. De tram (lijn 2 en 11) stopt om de hoek.';
+    if (q.includes('prijs') || q.includes('kost') || q.includes('duur'))
+      return 'Hoofdgerechten liggen tussen de €22 en €28. Voor een volledig menu met wijn rekent u op zo\'n €55 per persoon. Wilt u een tafel reserveren?';
+    // Extract reservation details from message
+    const hasDate = /\d+[\s-]\d+|\d+ (januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december)|morgen|overmorgen|vrijdag|zaterdag|zondag|maandag|dinsdag|woensdag|donderdag/i.test(q);
+    const hasPeople = /\d+\s*(persoon|personen|mensen|man|vrouw|gast)/i.test(q) || /met z\'n\s*\d+/i.test(q);
+    const hasTime = /\d+[:.]\d+|\d+\s*uur/i.test(q);
+    if (hasDate && hasPeople && hasTime)
+      return 'Dat is genoteerd! Mag ik ook uw naam voor de reservering, en zijn er allergenen waar wij rekening mee moeten houden?';
+    if (hasDate && hasPeople)
+      return 'Mooi, ik heb datum en gezelschap. Op welk tijdstip wilt u komen eten?';
+    if (hasDate || hasPeople || hasTime)
+      return 'Dat heb ik. Kunt u de datum, het tijdstip en het aantal personen aanvullen? Dan zet ik het direct voor u vast.';
+    return 'Welkom bij Bella Cucina! Wilt u een tafel reserveren, of heeft u een vraag over ons menu of openingstijden?';
+  }
+
+  if (persona === 'sport') {
+    if (q.includes('prijs') || q.includes('kost') || q.includes('abonnement') || q.includes('lidmaatschap'))
+      return 'We hebben drie opties: Basis €29/mnd (cardio + gewichten), Plus €39/mnd (plus alle groepslessen), en Premium €49/mnd (plus een PT-sessie per maand). Wil je een gratis proeftraining inplannen?';
+    if (q.includes('proef') || q.includes('kijken') || q.includes('probeer') || q.includes('vrijblijvend'))
+      return 'Tof! Welke dag komt jou het beste uit? Geef me ook je naam en e-mailadres, dan plan ik het direct in.';
+    if (q.includes('open') || q.includes('tijden') || q.includes('wanneer'))
+      return 'Doordeweeks zijn we open van 6:00 tot 23:00 uur, in het weekend van 8:00 tot 22:00 uur. Vrijwel altijd open dus!';
+    if (q.includes('groepsl') || q.includes('les') || q.includes('spinning') || q.includes('yoga') || q.includes('bootcamp'))
+      return 'Groepslessen zijn inbegrepen bij Plus en Premium. We geven spinning, yoga, bootcamp, kickboxing en pilates. Wil je het rooster, of meteen een proeftraining inplannen?';
+    if (q.includes('opzeg') || q.includes('contract') || q.includes('binden') || q.includes('vast'))
+      return 'Geen contract, geen inschrijfgeld. Je kunt maandelijks opzeggen met een maand opzegtermijn. Meer drempelvrij wordt het niet!';
+    if (q.includes('pt') || q.includes('personal') || q.includes('trainer'))
+      return 'Persoonlijke training is inbegrepen bij Premium (€49/mnd) voor 1 sessie per maand. Extra PT-sessies zijn mogelijk voor €45 per uur. Wil je er meer over weten?';
+    return 'Hey! Kan ik je helpen met info over abonnementen, groepslessen of een gratis proeftraining inplannen?';
+  }
+
+  if (persona === 'salon') {
+    if (q.includes('afspraak') || q.includes('boek') || q.includes('reserv') || q.includes('wanneer') || q.includes('inplannen'))
+      return 'Zeker! Welke behandeling wil je, en wanneer schikt het je? Geef ook je naam en telefoonnummer, dan bevestig ik de afspraak.';
+    if (q.includes('prijs') || q.includes('kost') || q.includes('duur'))
+      return 'Knippen (dames) kost €45, heren €28. Knippen met kleuren begint bij €95, balayage en highlights vanaf €120. Wil je een afspraak maken?';
+    if (q.includes('open') || q.includes('tijden') || q.includes('gesloten'))
+      return 'We zijn open dinsdag t/m vrijdag van 9:00 tot 19:00 uur en zaterdag van 9:00 tot 17:00 uur. Maandag en zondag zijn we gesloten.';
+    if (q.includes('kleur') || q.includes('verf') || q.includes('balayage') || q.includes('highlight'))
+      return 'We zijn gespecialiseerd in balayage en highlights. Bij twijfel over de kleur bieden we een gratis consult van 15 minuten aan. Wil je dat inplannen?';
+    if (q.includes('curly') || q.includes('krullen') || q.includes('krulhaar'))
+      return 'We zijn gecertificeerd in de Curly Girl Methode en snijden krullend haar droog zodat je ziet wat je thuis ook hebt. Wil je een afspraak maken?';
+    // extract appointment info
+    const hasTreatment = q.includes('knippen') || q.includes('kleuren') || q.includes('föhnen') || q.includes('behandeling');
+    const hasDate = /morgen|overmorgen|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|\d+[\s-]\d+/i.test(q);
+    if (hasTreatment && hasDate)
+      return 'Dat klinkt goed! Mag ik je naam en telefoonnummer zodat ik de afspraak kan bevestigen?';
+    return 'Hallo! Kan ik je helpen met een afspraak maken, of heb je een vraag over onze behandelingen?';
+  }
+
+  if (persona === 'makelaar') {
+    if (q.includes('kopen') || q.includes('zoek') || q.includes('woning') || q.includes('huis') || q.includes('appartement'))
+      return 'Dat begrijp ik. In welke buurt of gemeente zoekt u, wat is globaal uw budget, en wanneer wilt u het liefst betrekken?';
+    if (q.includes('verkopen') || q.includes('verkoop') || q.includes('te koop'))
+      return 'Goed dat u contact opneemt. Een gratis waardebepaling is altijd de eerste stap. Op welk adres betreft het, en wanneer zou u idealiter willen verkopen?';
+    if (q.includes('waarde') || q.includes('taxatie') || q.includes('hoeveel waard') || q.includes('woz'))
+      return 'Wij doen gratis waardebepalingen, geheel vrijblijvend. Op welk adres gaat het, dan kan ik een afspraak inplannen met een van onze makelaars.';
+    if (q.includes('huur') || q.includes('verhuur'))
+      return 'Wij begeleiden ook verhuur, zowel voor verhuurders als huurders. Gaat het om het vinden van een huurwoning of het verhuren van een woning?';
+    if (q.includes('nvm') || q.includes('betrouwbaar') || q.includes('gecertificeerd'))
+      return 'Wij zijn NVM-gecertificeerd en lid van VastgoedPRO. Ons team heeft gemiddeld 14 jaar ervaring in de Utrechtse markt. Wilt u kennismaken?';
+    return 'Welkom bij Huijsen Makelaars. Bent u op zoek naar een woning, wilt u verkopen of verhuren, of heeft u een andere vraag?';
+  }
+
+  return 'Bedankt voor uw vraag. Hoe kan ik u verder helpen?';
+}
+
+async function sendMsg(id) {
+  const input = document.getElementById('input-' + id);
+  const msgs = document.getElementById('msgs-' + id);
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  // User bubble
+  const userEl = document.createElement('div');
+  userEl.className = 'msg msg-user';
+  userEl.innerHTML = `<div class="msg-bubble">${esc(text)}</div><div class="msg-time">nu</div>`;
+  msgs.appendChild(userEl);
+
+  // Typing indicator
+  const typingEl = document.createElement('div');
+  typingEl.className = 'typing';
+  typingEl.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(typingEl);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const h = histories[id];
+    h.push({ role: 'user', content: text });
+
+    const reply = await callClaude(id, h.slice(-12));
+
+    h.push({ role: 'assistant', content: reply });
+    histories[id] = h.slice(-12);
+
+    typingEl.remove();
+    const botEl = document.createElement('div');
+    botEl.className = 'msg msg-bot';
+    botEl.innerHTML = `<div class="msg-bubble">${esc(reply)}</div><div class="msg-time">nu</div>`;
+    msgs.appendChild(botEl);
+  } catch (e) {
+    typingEl.remove();
+    const fallback = getDemoFallback(id, text);
+    const botEl = document.createElement('div');
+    botEl.className = 'msg msg-bot';
+    botEl.innerHTML = `<div class="msg-bubble">${esc(fallback)}</div><div class="msg-time">nu</div>`;
+    msgs.appendChild(botEl);
+  }
+
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function esc(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ─── Contact form ──────────────────────────────────────────────
+function handleSubmit(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('.form-submit');
+  btn.textContent = 'Verstuurd! Wij nemen contact op binnen 1 werkdag.';
+  btn.style.background = '#4ade80';
+  btn.style.color = '#0a0c0b';
+  btn.style.boxShadow = '0 0 36px rgba(74,222,128,0.2)';
+  btn.disabled = true;
+}
+
+// ─── Smooth scroll ─────────────────────────────────────────────
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+});
+</script>
+</body>
+</html>
