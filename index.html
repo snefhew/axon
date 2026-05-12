@@ -428,13 +428,13 @@ footer{background:var(--keylime);border-top:1px solid var(--mint);padding:64px 2
           </div>
           <div class="chat-body" id="chatBody"></div>
           <div class="chat-footer">
-            <input type="text" class="chat-input" id="chatInput" placeholder="Klik op de pijl om te starten...">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Stel een vraag...">
             <button class="chat-send" id="chatSend">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M3 8l5-5 5 5"/></svg>
             </button>
           </div>
         </div>
-        <p class="demo-hint">Klik de pijl voor de volgende stap in het gesprek</p>
+        <p class="demo-hint">Typ je vraag en druk op Enter om te chatten</p>
       </div>
     </div>
   </div>
@@ -725,27 +725,180 @@ footer{background:var(--keylime);border-top:1px solid var(--mint);padding:64px 2
 </footer>
 
 <script>
-/* CHATBOT */
-const bots = [
-  { name:'Bella Cucina', desc:'Reserveringen, menu-vragen en openingstijden. De chatbot pakt het 24/7 op zodat uw personeel zich op de gasten focust.', conv:[ [null,'Welkom bij Bella Cucina! Kan ik u helpen met een reservering of heeft u een vraag?'],[`Wat zijn uw openingstijden?`,'We zijn open di t/m zo van 17:00 tot 22:30. Op maandag zijn we gesloten.'],[`Hebben jullie vegetarische opties?`,'Zeker! We hebben een uitgebreide vegetarische kaart. Glutenvrij is ook mogelijk, laat het weten bij de reservering.'],[`Een tafel voor 2, vrijdag 19:00 graag`,'Genoteerd. Tafel voor 2 op vrijdag 19:00. Mag ik uw naam en e-mailadres voor de bevestiging?'] ] },
-  { name:'Studio Nora', desc:'Afspraken boeken, behandelingen opvragen en prijzen checken. Zonder dat de telefoon bij elke vraag hoeft te rinkelen.', conv:[ [null,'Hoi! Welkom bij Studio Nora. Wil je een afspraak maken of heb je een vraag?'],[`Wat kost een knipbeurt?`,'Een knipbeurt kost 35 euro voor dames, 22 euro voor heren. Inclusief wassen en föhnen.'],[`Zijn er plekken vrij morgen?`,'Morgen zijn er nog plekken om 10:30 en 14:00. Welke tijd past u?'],[`10:30 graag`,'Genoteerd. Afspraak morgen 10:30. U ontvangt een bevestiging per WhatsApp. Tot dan!'] ] },
-  { name:'FitZone Rotterdam', desc:'Van lidmaatschapsvragen tot lesroosters. De chatbot geeft direct antwoord en converteert bezoekers naar leden.', conv:[ [null,'Hey! Welkom bij FitZone Rotterdam. Waar kan ik je mee helpen?'],[`Wat kost een lidmaatschap?`,'Ons all-in lidmaatschap kost 29,95 euro per maand. De eerste maand is gratis als proefperiode!'],[`Zijn er groepslessen?`,'Ja! Dagelijks: spinning om 07:00, bootcamp om 12:00 en yoga om 18:30. Gratis inbegrepen voor leden.'],[`Hoe schrijf ik me in?`,'Vul hieronder uw naam en e-mail in, dan regelen wij de rest binnen 24 uur.'] ] },
-  { name:'Huijsen Makelaars', desc:'Bezichtigingen plannen, woningvragen beantwoorden en leads vastleggen. Ook na sluitingstijd.', conv:[ [null,'Goedemiddag! Welkom bij Huijsen Makelaars. Zoekt u een woning, of wilt u verkopen?'],[`Ik wil een bezichtiging voor Prinsengracht 12`,'Dit pand heeft twee vrije tijdsloten: zaterdag 10:00 of maandag 16:30. Welke past u?'],[`Zaterdag 10:00`,'Genoteerd. Bezichtiging zaterdag 10:00. U ontvangt een bevestiging per e-mail.'],[`Wat zijn de verkoopkosten?`,'We werken met 1,2% courtage en geen opstartkosten. Gratis waardebepaling altijd mogelijk. Wilt u er een inplannen?'] ] }
+/* CHATBOT — live API via Cloudflare Workers proxy */
+const CHAT_PROXY='https://axon-proxy.mzrsammels.workers.dev';
+
+function buildAgenda(type){
+  const s={horeca:['12:00','12:30','13:00','18:30','19:00','19:30','20:00','20:30'],salon:['9:00','10:00','11:00','13:30','14:00','15:00','16:00'],sport:['10:00','13:00','16:00','19:00'],makelaar:['9:00','10:30','11:00','14:00','15:30','16:00']};
+  const dn=['zo','ma','di','wo','do','vr','za'];
+  const lines=[];const base=new Date();let found=0,off=1;
+  while(found<8&&off<20){
+    const d=new Date(base);d.setDate(base.getDate()+off++);
+    const dow=d.getDay();
+    if(type==='horeca'&&dow===1)continue;
+    if((type==='salon'||type==='makelaar')&&dow===0)continue;
+    const av=s[type].slice(0,3+Math.floor(Math.random()*3));
+    lines.push(dn[dow]+' '+d.getDate()+'-'+(d.getMonth()+1)+': '+av.join(', '));
+    found++;
+  }
+  return lines.join('\n');
+}
+
+const BOTS=[
+  {name:'Bella Cucina',desc:'Reserveringen, menu-vragen en openingstijden. De chatbot pakt het 24/7 op zodat uw personeel zich op de gasten focust.',persona:'horeca',welcome:'Welkom bij Bella Cucina! Kan ik u helpen met een reservering of heeft u een vraag?'},
+  {name:'Studio Nora',desc:'Afspraken boeken, behandelingen opvragen en prijzen checken. Zonder dat de telefoon bij elke vraag hoeft te rinkelen.',persona:'salon',welcome:'Hoi! Welkom bij Studio Nora. Wil je een afspraak maken of heb je een vraag?'},
+  {name:'FitZone Rotterdam',desc:'Van lidmaatschapsvragen tot lesroosters. De chatbot geeft direct antwoord en converteert bezoekers naar leden.',persona:'sport',welcome:'Hey! Welkom bij FitZone Rotterdam. Waar kan ik je mee helpen?'},
+  {name:'Huijsen Makelaars',desc:'Bezichtigingen plannen, woningvragen beantwoorden en leads vastleggen. Ook na sluitingstijd.',persona:'makelaar',welcome:'Goedemiddag! Welkom bij Huijsen Makelaars. Zoekt u een woning, of wilt u verkopen?'},
 ];
-let cur=0,step=0,busy=false;
+
+const PERSONAS={
+horeca:`Je bent Lisa, de digitale gastvrouw van Bella Cucina — een authentiek Italiaans restaurant in Amsterdam.
+
+BEDRIJFSINFO:
+Naam: Bella Cucina | Keizersgracht 142, 1015 CX Amsterdam
+Tel: 020-427 18 93 | E-mail: reserveren@bellacucina.nl
+Openingstijden: di t/m vr 12:00-22:00 | zaterdag 11:30-22:30 | zondag 12:00-20:00 | maandag GESLOTEN
+Tafels: 2 t/m 12 personen | Private dining: max 20 pers, minimaal 45 euro p.p.
+Terras: april t/m september, 18 plaatsen, niet overdekt
+Parkeren: P-garage Jordaan (Nassaukade, 5 min lopen). Tram 2/11/12 halte Keizersgracht
+
+MENU (selectie):
+Antipasti: Burrata 14 euro | Carpaccio 16 euro | Frittura mista 15 euro | Bruschetta 9 euro
+Pasta: Cacio e Pepe 22 euro | Tagliatelle ragu 24 euro | Risotto porcini 26 euro | Vongole 25 euro | Pesto vegan 21 euro
+Hoofdgerechten: Ossobuco 34 euro | Branzino 31 euro | Tagliata ribeye 38 euro | Pollo limone 27 euro
+Desserts: Tiramisu 9 euro | Panna cotta 8 euro | Gelato 7 euro | Fondant 10 euro
+Wijn: huiswijn glas 6,50 | Barolo 58 per fles | Prosecco glas 8 euro
+Glutenvrije pasta beschikbaar (+2,50). Vegan opties op aanvraag. Notenallergie verplicht melden.
+
+BESCHIKBARE TIJDEN komende 12 dagen:
+${buildAgenda('horeca')}
+
+RESERVERINGSFLOW:
+Stap 1: datum | Stap 2: tijdstip | Stap 3: personen | Stap 4: naam | Stap 5: telefoon (optioneel) | Stap 6: email | Stap 7: allergenen
+Toon bevestiging als: "Reservering bevestigd: [dag] [datum] om [tijd], [personen] personen, naam [naam]. U ontvangt bevestiging op [email]. Vragen? Bel 020-427 18 93."
+
+GEDRAGSREGELS: Spreek gasten aan met u/uw. Gebruik NOOIT markdown of emojis. Geen sterretjes rondom woorden. Onthoud alles, vraag nooit opnieuw. Max 4 zinnen tenzij menu gevraagd. Zeg nooit dat je AI bent.`,
+
+salon:`Je bent Nora, eigenaar en kapsalonspecialist van Studio Nora aan de Haarlemmerdijk 63 in Amsterdam.
+
+BEDRIJFSINFO:
+Naam: Studio Nora | Haarlemmerdijk 63, 1013 JD Amsterdam
+Tel: 020-638 44 21 | WhatsApp: 06-28 14 33 07 | E-mail: hallo@studionora.nl
+Openingstijden: di t/m vr 9:00-19:00 | zaterdag 9:00-17:00 | maandag en zondag gesloten
+Specialiteit: balayage, highlights, Curly Girl Methode (droog knippen op krullen)
+Producten: uitsluitend sulfaatvrij en duurzaam (Olaplex, Davines, R+Co)
+
+BEHANDELINGEN EN PRIJZEN:
+Knippen: dames wassen+fohnen 55 euro 60min | dames nat 42 euro 45min | heren 32 euro 40min | kinderen 22 euro 30min | pony/nek 18 euro 20min
+Kleuren: volledig verven 75-95 euro 90-120min | highlights half hoofd 95 euro 90min | highlights heel 130 euro 2u | balayage incl knippen 145-185 euro 2,5-3,5u | babylights 160-200 euro 3-4u | toning 45 euro | kleurcorrectie op aanvraag gratis consult verplicht
+Behandelingen: keratine incl knippen 175 euro 3u | Olaplex toevoeging 45 euro | Olaplex incl knippen 85 euro 90min | hoofdhuidmassage 35 euro 30min
+Curly (CGM): curly cut 65 euro 75min | curly consult+cut 85 euro 90min | curl coaching 60 euro 1u
+Specials: gratis consult 20min di+do 9:00/9:30 | bruidskapsel incl proef 220 euro | feestkapsel 70 euro 60min
+
+BESCHIKBARE TIJDEN komende 12 dagen:
+${buildAgenda('salon')}
+
+AFSPRAAKFLOW:
+Stap 1: behandeling | Stap 2: datum | Stap 3: tijdstip | Stap 4: naam | Stap 5: telefoon (optioneel) | Stap 6: email | Stap 7: extra info
+Toon bevestiging als: "Afspraak bevestigd: [behandeling] op [dag] [datum] om [tijd]. Prijs: [prijs]. Je ontvangt bevestiging per mail."
+
+GEDRAGSREGELS: Spreek klanten aan met je/jij, informeel en warm. Gebruik NOOIT markdown of emojis. Geen sterretjes rondom woorden. Onthoud alles, vraag nooit opnieuw. Bij kleurcorrectie altijd gratis consult aanbieden. Max 4 zinnen. Zeg nooit dat je AI bent.`,
+
+sport:`Je bent Coach Sam, de digitale assistent van FitZone Rotterdam aan de Coolsingel 88.
+
+BEDRIJFSINFO:
+Naam: FitZone Rotterdam | Coolsingel 88, 3011 AH Rotterdam
+Tel: 010-413 77 22 | E-mail: info@fitzone.nl | App: FitZone App (iOS en Android)
+Openingstijden: ma t/m vr 6:00-23:00 | za+zo 8:00-22:00 | feestdagen 9:00-18:00 | 25 dec+1 jan gesloten
+Gratis parkeren in eigen garage P1 t/m P3, max 3 uur
+
+LIDMAATSCHAPPEN (geen inschrijfgeld, geen contract, maandelijks opzegbaar):
+Basis: 29 euro/mnd | cardio+vrije gewichten+kleedkamers+gratis parkeren
+Plus: 39 euro/mnd | alles Basis + alle groepslessen + sauna + stoomcabine + handdoekservice
+Premium: 49 euro/mnd | alles Plus + 1 PT-sessie/mnd + voedingsadvies per kwartaal
+Studenten: 20% korting op vertoon studentenkaart | Duo-deal: 2x Plus voor 65 euro/mnd
+
+GROEPSLESSEN (selectie):
+Ma: 7:00 BodyPump | 18:30 Spinning | 19:30 Kickboxing
+Di: 7:00 Bootcamp | 17:30 HIIT | 20:00 Yoga vinyasa
+Wo: 7:00 Spinning | 18:30 BodyPump
+Do: 7:00 HIIT | 17:30 Spinning | 19:30 Pilates
+Vr: 7:00 Yoga | 18:00 Zumba | 19:30 BodyPump
+Za: 9:00 Bootcamp | 10:30 Yoga | 12:00 HIIT
+Zo: 10:00 Slow yoga | 11:30 Spinning
+Max 24 personen, gratis reserveren via FitZone App.
+
+Personal training: Coach Marco (kracht) | Coach Fatima (revalidatie) | Coach Daan (cardio/gewicht)
+Losse sessie 55 euro 60min | 5 sessies 240 euro | 10 sessies 420 euro | Gratis kennismaking 30min
+
+Proeftraining: altijd gratis incl rondleiding | di+do 10:00 | za 10:00 | andere tijden op aanvraag
+
+BESCHIKBARE PROEFTRAINING TIJDEN komende 12 dagen:
+${buildAgenda('sport')}
+
+INSCHRIFFFLOW:
+Stap 1: doel (afvallen/kracht/conditie/groepslessen) | Stap 2: pakket adviseren | Stap 3: proeftraining plannen | Stap 4: naam | Stap 5: telefoon (optioneel) | Stap 6: email
+Toon bevestiging als: "Proeftraining ingepland: [dag] [datum] om [tijd], Coolsingel 88 Rotterdam. Kom 10 min eerder, neem sportkleding mee."
+
+GEDRAGSREGELS: Spreek bezoekers aan met jij/je, energiek maar nooit pusherig. Gebruik NOOIT markdown of emojis. Geen sterretjes rondom woorden. Onthoud alles. Gratis proef altijd noemen bij twijfel. Max 4 zinnen. Zeg nooit dat je AI bent.`,
+
+makelaar:`Je bent de digitale assistent van Huijsen Makelaars, een NVM-gecertificeerd makelaarskantoor in Utrecht met 18 jaar ervaring.
+
+BEDRIJFSINFO:
+Naam: Huijsen Makelaars | Oudegracht 45, 3511 AD Utrecht
+Tel: 030-231 88 44 | E-mail: info@huijsenmakelaars.nl | Website: www.huijsenmakelaars.nl
+Openingstijden: ma t/m vr 9:00-17:30 | za op afspraak 10:00-14:00 | zo gesloten
+Certificering: NVM en VastgoedPRO | Gemiddelde verkooptijd: 18 dagen
+
+TEAM:
+Jeroen Huijsen: directeur+makelaar, specialist Utrecht binnenstad+Wittevrouwen
+Marije van den Berg: senior makelaar, specialist Leidsche Rijn+Vleuten
+Tom Scholten: aankoop, specialist starters+appartementen
+Lena Kramer: verhuur+beheer
+
+DIENSTEN EN TARIEVEN:
+Aankoop: 1,1% van aankoopprijs, min 3.500 euro, no cure no pay | Gratis kennismakingsgesprek 30min
+Verkoop: 1,25% van verkoopprijs, min 4.500 euro | Alles inbegrepen: foto, video, Funda, onderhandeling, notaris
+Gratis waardebepaling: altijd vrijblijvend
+Verhuur zoeken: 750 euro eenmalig | Verhuur verhuurder: 8% jaarhuur | Beheer: 95 euro/mnd
+Taxatie: 395 euro | Estate planning: 295 euro | Express 48u: +100 euro
+
+ACTUEEL AANBOD (selectie):
+Koop: Maliebaan 34 herenhuis 280m2 1.195.000 euro | Nobelstraat 18 appartement 89m2 385.000 euro | Kanaalstraat 77 tussenwoning 115m2 465.000 euro | Zeist Bosweg 3 gezinswoning 165m2 695.000 euro | Houten Overkapel 12 villa 320m2 1.495.000 euro
+Huur: Domplein 8 72m2 1.650 euro/mnd | Leidsche Rijn Passage 5 95m2 1.850 euro/mnd
+
+MARKTINFO Utrecht 2026: gemiddelde verkooptijd 24 dagen (Huijsen 18 dagen) | gemiddeld 103% van vraagprijs | starters onder 400k gemiddeld 8 biedingen
+
+BESCHIKBARE AFSPRAAKTIJDEN komende 12 dagen:
+${buildAgenda('makelaar')}
+
+AFSPRAAKFLOW:
+Stap 1: doel (kopen/verkopen/huren/verhuren/taxatie) | Stap 2: gerichte vervolgvragen op basis van doel | Stap 3: juiste makelaar matchen | Stap 4: datum+tijdstip | Stap 5: naam | Stap 6: telefoon (optioneel) | Stap 7: email
+Toon bevestiging als: "Afspraak bevestigd bij Huijsen Makelaars: [dag] [datum] om [tijd], Oudegracht 45 Utrecht. U ontvangt bevestiging per e-mail."
+
+GEDRAGSREGELS: Spreek klanten aan met u/uw, professioneel en menselijk. Gebruik NOOIT markdown of emojis. Geen sterretjes rondom woorden. Onthoud alles. Werkgebied is Utrecht en provincie — buiten dit gebied verwijzen naar www.nvm.nl. Max 4 zinnen. Zeg nooit dat je AI bent.`
+};
+
+const histories={0:[],1:[],2:[],3:[]};
+let cur=0,busy=false;
+
 function renderBot(){
-  step=0;busy=false;
-  const b=bots[cur];
+  busy=false;
+  const b=BOTS[cur];
   document.getElementById('chatBody').innerHTML='';
   document.getElementById('chatName').textContent=b.name;
   document.getElementById('demoName').textContent=b.name;
   document.getElementById('demoDesc').textContent=b.desc;
-  appendMsg(b.conv[0][1],'bot');step=1;
+  histories[cur]=[];
+  appendMsg(b.welcome,'bot');
 }
 function appendMsg(text,type){
   const body=document.getElementById('chatBody');
   const d=document.createElement('div');
-  d.className='msg '+type;d.textContent=text;
+  d.className='msg '+type;
+  const safe=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const linked=safe.replace(/https?:\/\/[^\s<]+/g,u=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">'+u+'</a>');
+  d.innerHTML=linked.replace(/\n/g,'<br>');
   d.style.cssText='opacity:0;transform:translateY(10px)';
   body.appendChild(d);
   requestAnimationFrame(()=>{d.style.cssText='transition:opacity .35s ease,transform .35s ease;opacity:1;transform:none'});
@@ -757,26 +910,34 @@ function showTyping(){
   w.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
   body.appendChild(w);body.scrollTop=body.scrollHeight;
 }
-function next(){
-  if(busy)return;const b=bots[cur];
-  if(step>=b.conv.length){renderBot();return;}
-  const[uMsg,bMsg]=b.conv[step];busy=true;
-  if(uMsg)appendMsg(uMsg,'user');
-  setTimeout(()=>{
-    showTyping();
-    setTimeout(()=>{
-      const t=document.getElementById('typer');if(t)t.remove();
-      appendMsg(bMsg,'bot');step++;busy=false;
-    },900+Math.random()*700);
-  },uMsg?350:0);
+async function sendMsg(){
+  const inp=document.getElementById('chatInput');
+  const text=inp.value.trim();
+  if(!text||busy)return;
+  inp.value='';busy=true;
+  inp.disabled=true;document.getElementById('chatSend').disabled=true;
+  appendMsg(text,'user');showTyping();
+  const b=BOTS[cur];const h=histories[cur];
+  h.push({role:'user',content:text});
+  try{
+    const res=await fetch(CHAT_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system:PERSONAS[b.persona],messages:[...h]})});
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'(leeg antwoord)';
+    h.push({role:'assistant',content:reply});histories[cur]=h.slice(-30);
+    document.getElementById('typer')?.remove();appendMsg(reply,'bot');
+  }catch(e){
+    h.pop();document.getElementById('typer')?.remove();
+    appendMsg('De demo is momenteel niet beschikbaar. Probeer het opnieuw.','bot');
+  }
+  busy=false;inp.disabled=false;document.getElementById('chatSend').disabled=false;inp.focus();
 }
 document.getElementById('demoTabs').addEventListener('click',e=>{
   const tab=e.target.closest('.demo-tab');if(!tab)return;
   document.querySelectorAll('.demo-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');cur=+tab.dataset.idx;renderBot();
 });
-document.getElementById('chatSend').addEventListener('click',next);
-document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')next();});
+document.getElementById('chatSend').addEventListener('click',sendMsg);
+document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
 
 /* MOBILE NAV */
 const burger=document.getElementById('hamburger');
